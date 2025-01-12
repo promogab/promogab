@@ -42,6 +42,7 @@
             border-radius: 6px;
             transition: all 0.3s ease;
             background-color: #f8f8f8;
+            width: 100%;
         }
         #studentName:focus {
             border-color: #2196F3;
@@ -86,6 +87,16 @@
             background-color: #e9e9e9;
             border-radius: 4px;
         }
+        #itemDetails p {
+            margin: 8px 0;
+            padding: 8px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        #itemDetails p:hover {
+            background-color: #f8f8f8;
+        }
         .item-container {
             border: 1px solid #ddd;
             padding: 15px;
@@ -117,15 +128,102 @@
         .logo-version-noir {
             background-color: #fff;
         }
+        .admin-login {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .admin-panel {
+            display: none;
+        }
+        .entry-list {
+            margin-top: 20px;
+        }
+        .entry-item {
+            background-color: #f8f8f8;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .entry-actions {
+            margin-top: 10px;
+        }
+        .edit-btn {
+            background-color: #2196F3;
+        }
+        .delete-btn {
+            background-color: #ff4444;
+        }
+        .search-box {
+            margin-bottom: 20px;
+        }
+        #adminSearchInput {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .admin-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        /* Custom notification styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 4px;
+            z-index: 1000;
+            animation: slideDown 0.5s ease-out, fadeOut 0.5s ease-out 2.5s forwards;
+        }
+
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
     </style>
 </head>
 <body>
+    <div class="admin-login">
+        <button onclick="toggleAdminLogin()">Admin Login</button>
+        <button onclick="logoutAdmin()" id="logoutButton" style="margin-left: 10px; display: none;">Logout</button>
+        <div id="adminLoginForm" style="display: none;">
+            <input type="password" id="adminPassword" placeholder="Mot de passe admin" onkeypress="if(event.key === 'Enter') loginAdmin()">
+            <button onclick="loginAdmin()" id="loginButton" style="margin-left: 5px;">Connexion</button>
+        </div>
+    </div>
+
+    <div id="adminPanel" class="admin-container admin-panel">
+        <h2>Panneau d'administration</h2>
+        <div class="search-box">
+            <input type="text" id="adminSearchInput" placeholder="Rechercher par nom d'étudiant...">
+        </div>
+        <div id="entryList" class="entry-list">
+            <!-- Entries will be loaded here -->
+        </div>
+    </div>
+
     <div class="form-container">
         <h1>Commande de Vêtements Scolaires</h1>
         <form id="orderForm">
             <div class="form-group">
+                <div id="studentNamesList" style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
                 <label for="studentName">Nom de l'étudiant:</label>
-                <input type="text" id="studentName" name="studentName" required>
+                <div style="position: relative;">
+                    <input type="text" id="studentName" name="studentName" required placeholder="Entrez le nom de l'étudiant" autocomplete="off">
+                    <div id="autocompleteList" style="display: none; position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000;"></div>
+                </div>
             </div>
 
             <div id="items-container">
@@ -134,7 +232,7 @@
                     
                     <div class="form-group">
                         <label for="description-1">Description du vêtement:</label>
-                        <select id="description-1" name="description" required>
+                        <select id="description-1" name="description" required onchange="updateTotal()">
                             <option value="">Sélectionnez un type</option>
                             <option value="T-Shirt">T-Shirt</option>
                             <option value="T-Shirt Manches Longes">T-Shirt Manches Longes</option>
@@ -145,12 +243,12 @@
 
                     <div class="form-group">
                         <label for="color-1">Couleur:</label>
-                        <input type="text" id="color-1" name="color" required>
+                        <input type="text" id="color-1" name="color" required onchange="updateTotal()">
                     </div>
 
                     <div class="form-group">
                         <label for="size-1">Grandeur:</label>
-                        <select id="size-1" name="size" required>
+                        <select id="size-1" name="size" required onchange="updateTotal()">
                             <option value="">Sélectionnez une taille</option>
                             <option value="XS">XS</option>
                             <option value="S">S</option>
@@ -162,26 +260,26 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="price-1">Prix:</label>
-                        <input type="number" id="price-1" name="price" step="0.01" required onchange="updateTotal()">
-                    </div>
-
-                    <div class="form-group">
                         <label>Choix du logo:</label>
                         <div class="logo-options">
                             <div class="logo-option">
-                                <input type="radio" name="logo-1" value="original" id="logo-original-1" required>
+                                <input type="radio" name="logo-1" value="original" id="logo-original-1" required onchange="updateTotal()">
                                 <label for="logo-original-1">Logo Original</label>
                             </div>
                             <div class="logo-option">
-                                <input type="radio" name="logo-1" value="blanc" id="logo-blanc-1">
+                                <input type="radio" name="logo-1" value="blanc" id="logo-blanc-1" onchange="updateTotal()">
                                 <label for="logo-blanc-1">Logo Version Blanche</label>
                             </div>
                             <div class="logo-option">
-                                <input type="radio" name="logo-1" value="noir" id="logo-noir-1">
+                                <input type="radio" name="logo-1" value="noir" id="logo-noir-1" onchange="updateTotal()">
                                 <label for="logo-noir-1">Logo Version Noire</label>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="price-1">Prix:</label>
+                        <input type="number" id="price-1" name="price" min="0" step="0.01" placeholder="0.00" required onchange="updateTotal()" oninput="updateTotal()">
                     </div>
                 </div>
             </div>
@@ -189,16 +287,116 @@
             <button type="button" class="add-item-btn" onclick="addItem()">Ajouter un article</button>
 
             <div class="total-section">
-                <p>Rabais par étudiant: 5$</p>
-                <p>Prix avant rabais: <span id="originalPrice">0.00</span>$</p>
-                <p>Prix total (avec rabais): <span id="totalPrice">0.00</span>$</p>
+                <div id="itemDetails"></div>
+                <p style="color: #4CAF50;">Un rabais de 5$ sera accordé pour chaque étudiant qui aura commandé</p>
+                <p>Prix Total: <span id="totalPrice">0.00</span>$</p>
             </div>
 
             <button type="submit">Soumettre la commande</button>
         </form>
     </div>
 
+    <div class="gd-login" style="text-align: center; margin-top: 20px; font-size: 12px;">
+        <button onclick="toggleGDLogin()" style="background-color: #f5f5f5; color: #666; padding: 5px 10px; font-size: 12px;">GD</button>
+        <button onclick="logoutGD()" id="gdLogoutButton" style="background-color: #f5f5f5; color: #666; padding: 5px 10px; font-size: 12px; margin-left: 5px; display: none;">Déconnexion</button>
+        <div id="gdLoginForm" style="display: none; margin-top: 5px;">
+            <input type="password" id="gdPassword" placeholder="Mot de passe" style="padding: 4px; font-size: 12px;" onkeypress="if(event.key === 'Enter') loginGD()">
+            <button onclick="loginGD()" style="background-color: #f5f5f5; color: #666; padding: 4px 8px; font-size: 12px;">Connexion</button>
+        </div>
+    </div>
+
+    <style>
+        .report-button {
+            background-color: #2196F3;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+        }
+        
+        .report-button:hover {
+            background-color: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+        
+        .report-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+        }
+        
+        .report-button i {
+            font-size: 16px;
+        }
+    </style>
+
+    <div id="gdPanel" class="admin-container" style="display: none; margin-top: 20px;">
+        <div class="report-actions" style="margin-bottom: 30px; display: flex; gap: 15px; justify-content: center;">
+            <button onclick="showEmailDialog('order-report')" class="report-button">
+                <i class="fas fa-envelope"></i>
+                <span>Rapport des Commandes</span>
+            </button>
+            <button onclick="showEmailDialog('production-report')" class="report-button">
+                <i class="fas fa-envelope"></i>
+                <span>Rapport de Production</span>
+            </button>
+            <button onclick="showEmailDialog('summary-report')" class="report-button">
+                <i class="fas fa-envelope"></i>
+                <span>Résumé avec Rabais</span>
+            </button>
+        </div>
+        <h2>Rapport des Commandes</h2>
+        <div id="orderReport" class="entry-list">
+            <!-- Report content will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Email Dialog -->
+    <div id="emailDialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000;">
+        <h3 style="margin-top: 0;">Envoyer le rapport</h3>
+        <div style="margin-bottom: 15px;">
+            <label for="emailInput">Adresse email:</label>
+            <input type="email" id="emailInput" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px;">Format:</label>
+            <div style="display: flex; gap: 15px;">
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" id="xlsxFormat" checked>
+                    Excel
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" id="pdfFormat" checked>
+                    PDF
+                </label>
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeEmailDialog()" style="padding: 8px 15px; border: none; border-radius: 4px; background: #ddd; cursor: pointer;">Annuler</button>
+            <button onclick="sendReport()" style="padding: 8px 15px; border: none; border-radius: 4px; background: #4CAF50; color: white; cursor: pointer;">Envoyer</button>
+        </div>
+    </div>
+
+    <script src="https://apis.google.com/js/api.js"></script>
     <script>
+        // Load the Google Apps Script API
+        gapi.load('client', initClient);
+
+        // Initialize the API client
+        function initClient() {
+            gapi.client.init({
+                apiKey: null,  // No API key needed for this type of script
+                discoveryDocs: ['https://script.googleapis.com/$discovery/rest?version=v1'],
+            });
+        }
+
         let itemCounter = 1;
         const lightColors = [
             '#e8f4ff', // Light blue
@@ -225,7 +423,7 @@
                 
                 <div class="form-group">
                     <label for="description-${itemCounter}">Description du vêtement:</label>
-                    <select id="description-${itemCounter}" name="description" required>
+                    <select id="description-${itemCounter}" name="description" required onchange="updateTotal()">
                         <option value="">Sélectionnez un type</option>
                         <option value="T-Shirt">T-Shirt</option>
                         <option value="T-Shirt Manches Longes">T-Shirt Manches Longes</option>
@@ -236,12 +434,12 @@
 
                 <div class="form-group">
                     <label for="color-${itemCounter}">Couleur:</label>
-                    <input type="text" id="color-${itemCounter}" name="color" required>
+                    <input type="text" id="color-${itemCounter}" name="color" required onchange="updateTotal()">
                 </div>
 
                 <div class="form-group">
                     <label for="size-${itemCounter}">Grandeur:</label>
-                    <select id="size-${itemCounter}" name="size" required>
+                    <select id="size-${itemCounter}" name="size" required onchange="updateTotal()">
                         <option value="">Sélectionnez une taille</option>
                         <option value="XS">XS</option>
                         <option value="S">S</option>
@@ -253,27 +451,28 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="price-${itemCounter}">Prix:</label>
-                    <input type="number" id="price-${itemCounter}" name="price" step="0.01" required onchange="updateTotal()">
-                </div>
-
-                <div class="form-group">
                     <label>Choix du logo:</label>
                     <div class="logo-options">
                         <div class="logo-option">
-                            <input type="radio" name="logo-${itemCounter}" value="original" id="logo-original-${itemCounter}" required>
+                            <input type="radio" name="logo-${itemCounter}" value="original" id="logo-original-${itemCounter}" required onchange="updateTotal()">
                             <label for="logo-original-${itemCounter}">Logo Original</label>
                         </div>
                         <div class="logo-option">
-                            <input type="radio" name="logo-${itemCounter}" value="blanc" id="logo-blanc-${itemCounter}">
+                            <input type="radio" name="logo-${itemCounter}" value="blanc" id="logo-blanc-${itemCounter}" onchange="updateTotal()">
                             <label for="logo-blanc-${itemCounter}">Logo Version Blanche</label>
                         </div>
                         <div class="logo-option">
-                            <input type="radio" name="logo-${itemCounter}" value="noir" id="logo-noir-${itemCounter}">
+                            <input type="radio" name="logo-${itemCounter}" value="noir" id="logo-noir-${itemCounter}" onchange="updateTotal()">
                             <label for="logo-noir-${itemCounter}">Logo Version Noire</label>
                         </div>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="price-${itemCounter}">Prix:</label>
+                    <input type="number" id="price-${itemCounter}" name="price" min="0" step="0.01" placeholder="0.00" required onchange="updateTotal()" oninput="updateTotal()">
+                </div>
+            </div>
             `;
 
             container.appendChild(newItem);
@@ -293,27 +492,659 @@
                 removeBtn.style.display = items.length > 1 ? 'block' : 'none';
             });
         }
+function updateTotal() {
+    const items = document.querySelectorAll('.item-container');
+    let totalPrice = 0;
+    const itemDetailsDiv = document.getElementById('itemDetails');
+    itemDetailsDiv.innerHTML = '';
 
-        function updateTotal() {
-            const priceInputs = document.querySelectorAll('input[name="price"]');
-            let totalPrice = 0;
+    items.forEach((item, index) => {
+        const itemId = item.dataset.itemId;
+        const description = document.getElementById(`description-${itemId}`).value;
+        const color = document.getElementById(`color-${itemId}`).value;
+        const size = document.getElementById(`size-${itemId}`).value;
+        const price = parseFloat(document.getElementById(`price-${itemId}`).value) || 0;
+        const logoInput = document.querySelector(`input[name="logo-${itemId}"]:checked`);
+        const logo = logoInput ? logoInput.value : '---';
+        
+        if (description || color || size || price > 0 || logo) {
+            const itemDetail = document.createElement('p');
+            itemDetail.innerHTML = `Article ${index + 1}: ${description || '---'} |
+                                  Couleur: ${color || '---'} |
+                                  Taille: ${size || '---'} |
+                                  Logo: ${logo} |
+                                  Prix: ${price.toFixed(2)}$`;
+            itemDetailsDiv.appendChild(itemDetail);
+        }
+        
+        totalPrice += price;
+    });
+
+    document.getElementById('totalPrice').textContent = totalPrice.toFixed(2);
+}
+
+        // Initialize the form and student names
+        updateRemoveButtons();
+
+        // Function to load and display student names
+        async function loadStudentNames() {
+            const namesContainer = document.getElementById('studentNamesList');
+            namesContainer.innerHTML = '<p>Chargement des noms des étudiants...</p>';
             
-            priceInputs.forEach(input => {
-                totalPrice += parseFloat(input.value) || 0;
-            });
-            
-            const discount = 5;
-            
-            document.getElementById('originalPrice').textContent = totalPrice.toFixed(2);
-            document.getElementById('totalPrice').textContent = (totalPrice - discount).toFixed(2);
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec?action=getEntries');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const entries = await response.json();
+                console.log('Received entries:', entries);
+                
+                if (!entries) {
+                    throw new Error('No data received from server');
+                }
+                
+                if (!Array.isArray(entries)) {
+                    throw new Error(`Invalid data format received from server: got ${typeof entries}`);
+                }
+                
+                if (entries.length === 0) {
+                    throw new Error('Server returned empty array');
+                }
+                
+                if (!entries[0].hasOwnProperty('studentName')) {
+                    throw new Error('Entries do not contain studentName field');
+                }
+
+                console.log('First few entries:', entries.slice(0, 3));
+                console.log('Sample studentName type:', entries[0] ? typeof entries[0].studentName : 'no entries');
+
+                // Create a map of student names to their order counts
+                const studentOrders = entries.reduce((acc, entry) => {
+                    const name = entry.studentName || 'Non spécifié';
+                    if (name !== 'Non spécifié') {
+                        acc[name] = (acc[name] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+
+                // Get unique student names and sort them
+                const studentNames = Object.keys(studentOrders).sort((a, b) => a.localeCompare(b, 'fr'));
+
+                if (studentNames.length === 0) {
+                    namesContainer.innerHTML = '<p style="color: #666;">Aucun nom d\'étudiant trouvé dans la liste.</p>';
+                    return;
+                }
+                
+                console.log('Student orders:', studentOrders);
+
+                // Clear previous content
+                namesContainer.innerHTML = '';
+
+                // Create alphabet filter
+                const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+                const alphabetContainer = document.createElement('div');
+                alphabetContainer.style.marginBottom = '15px';
+                alphabetContainer.style.display = 'flex';
+                alphabetContainer.style.flexWrap = 'wrap';
+                alphabetContainer.style.gap = '5px';
+                alphabetContainer.style.justifyContent = 'center';
+
+                // Add "All" button
+                const allButton = document.createElement('button');
+                allButton.textContent = 'Tous';
+                allButton.style.padding = '5px 10px';
+                allButton.style.borderRadius = '4px';
+                allButton.style.border = '1px solid #2196F3';
+                allButton.style.backgroundColor = '#fff';
+                allButton.style.color = '#2196F3';
+                allButton.style.cursor = 'pointer';
+                allButton.onclick = () => filterStudentsByLetter(null);
+                alphabetContainer.appendChild(allButton);
+
+                // Add letter buttons
+                alphabet.forEach(letter => {
+                    const letterButton = document.createElement('button');
+                    letterButton.textContent = letter;
+                    letterButton.style.padding = '5px 10px';
+                    letterButton.style.borderRadius = '4px';
+                    letterButton.style.border = '1px solid #2196F3';
+                    letterButton.style.backgroundColor = '#fff';
+                    letterButton.style.color = '#2196F3';
+                    letterButton.style.cursor = 'pointer';
+                    letterButton.onclick = () => filterStudentsByLetter(letter);
+                    alphabetContainer.appendChild(letterButton);
+                });
+
+                namesContainer.appendChild(alphabetContainer);
+
+                // Create a container for instruction and refresh button
+                const instructionContainer = document.createElement('div');
+                instructionContainer.style.display = 'flex';
+                instructionContainer.style.alignItems = 'center';
+                instructionContainer.style.justifyContent = 'space-between';
+                instructionContainer.style.marginBottom = '15px';
+                instructionContainer.style.width = '100%';
+
+                // Add instruction text
+                const instruction = document.createElement('span');
+                instruction.style.color = '#333';
+                instruction.style.fontWeight = 'bold';
+                instruction.style.fontSize = '14px';
+                instruction.textContent = 'Cliquez sur un nom pour le sélectionner:';
+
+                // Add a refresh button with new styling
+                const refreshButton = document.createElement('button');
+                refreshButton.innerHTML = '<i style="margin-right: 4px;">🔄</i> Actualiser';
+                refreshButton.style.padding = '4px 12px';
+                refreshButton.style.borderRadius = '15px';
+                refreshButton.style.border = '1px solid #E0E0E0';
+                refreshButton.style.backgroundColor = '#F5F5F5';
+                refreshButton.style.color = '#666';
+                refreshButton.style.fontSize = '12px';
+                refreshButton.style.cursor = 'pointer';
+                refreshButton.style.display = 'flex';
+                refreshButton.style.alignItems = 'center';
+                refreshButton.style.transition = 'all 0.2s ease';
+                refreshButton.onclick = loadStudentNames;
+
+                // Add hover effects
+                refreshButton.onmouseover = () => {
+                    refreshButton.style.backgroundColor = '#EEEEEE';
+                    refreshButton.style.borderColor = '#BDBDBD';
+                };
+                refreshButton.onmouseout = () => {
+                    refreshButton.style.backgroundColor = '#F5F5F5';
+                    refreshButton.style.borderColor = '#E0E0E0';
+                };
+
+                // Add instruction and refresh button to container
+                instructionContainer.appendChild(instruction);
+                instructionContainer.appendChild(refreshButton);
+                namesContainer.appendChild(instructionContainer);
+
+                // Create container for student buttons that will be filtered
+                const studentButtonsContainer = document.createElement('div');
+                studentButtonsContainer.style.display = 'flex';
+                studentButtonsContainer.style.flexWrap = 'wrap';
+                studentButtonsContainer.style.gap = '5px';
+                namesContainer.appendChild(studentButtonsContainer);
+
+                // Function to filter students by letter
+                function filterStudentsByLetter(letter) {
+                    const buttons = studentButtonsContainer.querySelectorAll('button');
+                    buttons.forEach(button => {
+                        const studentName = button.getAttribute('data-name');
+                        // Normalize the student name to remove accents and convert to uppercase
+                        const normalizedName = studentName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+                        if (!letter || normalizedName.charAt(0) === letter) {
+                            button.style.display = 'block';
+                        } else {
+                            button.style.display = 'none';
+                        }
+                    });
+
+                    // Update active state of filter buttons
+                    alphabetContainer.querySelectorAll('button').forEach(btn => {
+                        if ((letter && btn.textContent === letter) || (!letter && btn.textContent === 'Tous')) {
+                            btn.style.backgroundColor = '#2196F3';
+                            btn.style.color = '#fff';
+                        } else {
+                            btn.style.backgroundColor = '#fff';
+                            btn.style.color = '#2196F3';
+                        }
+                    });
+                }
+
+                // Add student name buttons to the container
+                studentNames.forEach(name => {
+                    const nameButton = document.createElement('button');
+                    nameButton.type = 'button';
+                    // Function to format name with first letters in marine blue
+                    const formatName = (name) => {
+                        return name.split(' ').map(word =>
+                            `<span style="color: #000080; font-weight: bold;">${word.charAt(0)}</span>${word.slice(1)}`
+                        ).join(' ');
+                    };
+                    nameButton.innerHTML = `${formatName(name)} <span style="font-size: 12px;">(${studentOrders[name]} articles)</span>`;
+                    nameButton.style.padding = '8px 15px';
+                    nameButton.style.margin = '3px';
+                    nameButton.style.borderRadius = '15px';
+                    nameButton.style.border = '1px solid #2196F3';
+                    nameButton.style.backgroundColor = '#fff';
+                    nameButton.style.color = '#2196F3';
+                    nameButton.style.fontWeight = 'bold';
+                    nameButton.style.cursor = 'pointer';
+                    nameButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                    nameButton.setAttribute('data-name', name);
+                    nameButton.onclick = () => {
+                        document.getElementById('studentName').value = name;
+                    };
+                    nameButton.onmouseover = () => {
+                        nameButton.style.backgroundColor = '#2196F3';
+                        nameButton.style.color = '#fff';
+                    };
+                    nameButton.onmouseout = () => {
+                        nameButton.style.backgroundColor = '#fff';
+                        nameButton.style.color = '#2196F3';
+                    };
+                    studentButtonsContainer.appendChild(nameButton);
+                });
+
+                // Refresh button is already added in the instruction container
+
+            } catch (error) {
+                console.error('Error loading student names:', error);
+                namesContainer.innerHTML = `<p style="color: red;">Erreur lors du chargement des noms: ${error.message}</p>
+                    <button onclick="loadStudentNames()"
+                            style="padding: 5px 10px; margin-top: 10px; border-radius: 15px; border: 1px solid #ddd; background-color: #fff; cursor: pointer;">
+                        🔄 Réessayer
+                    </button>`;
+            }
         }
 
-        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+        // Load student names when page loads
+        loadStudentNames();
+
+        // Autocomplete functionality
+        const studentNameInput = document.getElementById('studentName');
+        const autocompleteList = document.getElementById('autocompleteList');
+        let allStudentNames = [];
+
+        // Initialize allStudentNames immediately when entries are loaded
+        async function initializeAutocomplete() {
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec?action=getEntries');
+                const entries = await response.json();
+                allStudentNames = [...new Set(entries.map(entry => entry.studentName))].filter(name => name).sort((a, b) => a.localeCompare(b, 'fr'));
+                console.log('Loaded student names for autocomplete:', allStudentNames);
+            } catch (error) {
+                console.error('Error loading student names for autocomplete:', error);
+            }
+        }
+
+        // Call it when page loads
+        initializeAutocomplete();
+
+        studentNameInput.addEventListener('input', function(e) {
+            const inputValue = e.target.value.toLowerCase();
+            console.log('Input value:', inputValue);
+            console.log('Available names:', allStudentNames);
+            
+            if (inputValue.length === 0) {
+                autocompleteList.style.display = 'none';
+                return;
+            }
+
+            // Filter student names based on input
+            const filteredNames = allStudentNames.filter(name =>
+                name.toLowerCase().includes(inputValue)
+            );
+            console.log('Filtered names:', filteredNames);
+
+            // Show autocomplete list if we have matches
+            if (filteredNames.length > 0) {
+                autocompleteList.innerHTML = '';
+                filteredNames.forEach(name => {
+                    const div = document.createElement('div');
+                    div.style.padding = '8px 12px';
+                    div.style.cursor = 'pointer';
+                    div.style.borderBottom = '1px solid #eee';
+                    div.style.backgroundColor = 'white';
+                    
+                    // Highlight the matching part
+                    const regex = new RegExp(`(${inputValue})`, 'gi');
+                    div.innerHTML = name.replace(regex, '<strong style="color: #2196F3">$1</strong>');
+                    
+                    div.addEventListener('mouseenter', () => {
+                        div.style.backgroundColor = '#f5f5f5';
+                    });
+                    div.addEventListener('mouseleave', () => {
+                        div.style.backgroundColor = 'white';
+                    });
+                    div.addEventListener('click', () => {
+                        studentNameInput.value = name;
+                        autocompleteList.style.display = 'none';
+                    });
+                    autocompleteList.appendChild(div);
+                });
+                autocompleteList.style.display = 'block';
+                // Ensure the autocomplete list is visible and properly positioned
+                autocompleteList.style.position = 'absolute';
+                autocompleteList.style.width = '100%';
+                autocompleteList.style.maxHeight = '200px';
+                autocompleteList.style.overflowY = 'auto';
+                autocompleteList.style.backgroundColor = 'white';
+                autocompleteList.style.border = '1px solid #ddd';
+                autocompleteList.style.borderRadius = '4px';
+                autocompleteList.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                autocompleteList.style.zIndex = '1000';
+            } else {
+                autocompleteList.style.display = 'none';
+            }
+        });
+
+        // Close autocomplete list when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target !== studentNameInput) {
+                autocompleteList.style.display = 'none';
+            }
+        });
+
+        // Handle keyboard navigation in autocomplete list
+        studentNameInput.addEventListener('keydown', function(e) {
+            const items = autocompleteList.getElementsByTagName('div');
+            if (!items.length) return;
+
+            const current = autocompleteList.querySelector('.selected');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!current) {
+                    items[0].classList.add('selected');
+                    items[0].style.backgroundColor = '#e3f2fd';
+                } else {
+                    const next = current.nextElementSibling;
+                    if (next) {
+                        current.classList.remove('selected');
+                        current.style.backgroundColor = 'white';
+                        next.classList.add('selected');
+                        next.style.backgroundColor = '#e3f2fd';
+                        next.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (current) {
+                    const prev = current.previousElementSibling;
+                    if (prev) {
+                        current.classList.remove('selected');
+                        current.style.backgroundColor = 'white';
+                        prev.classList.add('selected');
+                        prev.style.backgroundColor = '#e3f2fd';
+                        prev.scrollIntoView({ block: 'nearest' });
+                    }
+                }
+            } else if (e.key === 'Enter' && current) {
+                e.preventDefault();
+                studentNameInput.value = current.textContent;
+                autocompleteList.style.display = 'none';
+            }
+        });
+
+        // Update allStudentNames when student names are loaded
+        const originalLoadStudentNames = loadStudentNames;
+        loadStudentNames = async function() {
+            await originalLoadStudentNames();
+            // Extract unique student names from the entries
+            allStudentNames = [...new Set(entries.map(entry => entry.studentName))].filter(name => name).sort((a, b) => a.localeCompare(b, 'fr'));
+        };
+        
+        // Admin functionality
+        const ADMIN_PASSWORD = 'admin123'; // This should be changed to a secure password
+        let currentEditingId = null;
+
+        function toggleAdminLogin() {
+            const loginForm = document.getElementById('adminLoginForm');
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function loginAdmin() {
+            try {
+                const passwordInput = document.getElementById('adminPassword');
+                const password = passwordInput.value.trim();
+                
+                if (!password) {
+                    throw new Error('Veuillez entrer un mot de passe');
+                }
+
+                if (password === ADMIN_PASSWORD) {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    document.getElementById('adminLoginForm').style.display = 'none';
+                    document.body.style.backgroundColor = '#ffe0e0';
+                    document.getElementById('logoutButton').style.display = 'inline-block';
+                    
+                    // Clear the password input
+                    passwordInput.value = '';
+                    
+                    // Load entries after successful login
+                    await loadEntries();
+                } else {
+                    throw new Error('Mot de passe incorrect');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.backgroundColor = '#ff4444';
+                notification.textContent = error.message;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+        }
+
+        // Add function to reset admin mode styling
+        function logoutAdmin() {
+            document.getElementById('adminPanel').style.display = 'none';
+            document.body.style.backgroundColor = '#f5f5f5'; // Reset to original color
+            document.getElementById('logoutButton').style.display = 'none';
+        }
+
+        async function loadEntries() {
+            const entryList = document.getElementById('entryList');
+            entryList.innerHTML = '<p>Chargement des commandes...</p>';
+            
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec?action=getEntries');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('Invalid data format received from server');
+                }
+                
+                if (data.length === 0) {
+                    entryList.innerHTML = '<p>Aucune commande trouvée</p>';
+                    return;
+                }
+                
+                displayEntries(data);
+            } catch (error) {
+                console.error('Error loading entries:', error);
+                entryList.innerHTML = `<p style="color: red;">Erreur lors du chargement des entrées: ${error.message}</p>`;
+            }
+        }
+
+        function displayEntries(entries) {
+            const entryList = document.getElementById('entryList');
+            entryList.innerHTML = '';
+
+            entries.forEach((entry, index) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'entry-item';
+                
+                // Safely get entry values with fallbacks
+                const studentName = entry.studentName || 'Non spécifié';
+                const description = entry.description || 'Non spécifié';
+                const color = entry.color || 'Non spécifié';
+                const size = entry.size || 'Non spécifié';
+                const price = entry.price ? `${parseFloat(entry.price).toFixed(2)}$` : 'Non spécifié';
+                const logo = entry.logo || 'Non spécifié';
+                const date = entry.timestamp ? new Date(entry.timestamp).toLocaleDateString('fr-CA') : 'Date non disponible';
+                
+                entryDiv.innerHTML = `
+                    <h3>Commande de ${studentName}</h3>
+                    <div class="entry-details">
+                        <p><strong>Date:</strong> ${date}</p>
+                        <p><strong>Description:</strong> ${description}</p>
+                        <p><strong>Couleur:</strong> ${color}</p>
+                        <p><strong>Taille:</strong> ${size}</p>
+                        <p><strong>Prix:</strong> ${price}</p>
+                        <p><strong>Logo:</strong> ${logo}</p>
+                    </div>
+                    <div class="entry-actions">
+                        <button class="edit-btn" onclick="editEntry(${index})" title="Modifier cette commande">
+                            <span>Modifier</span>
+                        </button>
+                        <button class="delete-btn" onclick="deleteEntry(${index})" title="Supprimer cette commande">
+                            <span>Supprimer</span>
+                        </button>
+                    </div>
+                `;
+                entryList.appendChild(entryDiv);
+            });
+
+            // Add some CSS for better entry display
+            const style = document.createElement('style');
+            style.textContent = `
+                .entry-details {
+                    margin: 10px 0;
+                    padding: 10px;
+                    background-color: #f9f9f9;
+                    border-radius: 4px;
+                }
+                .entry-details p {
+                    margin: 5px 0;
+                }
+                .entry-details strong {
+                    color: #333;
+                    min-width: 100px;
+                    display: inline-block;
+                }
+                .entry-actions button span {
+                    pointer-events: none;
+                }
+                .entry-item {
+                    transition: background-color 0.3s ease;
+                }
+                .entry-item:hover {
+                    background-color: #f0f0f0;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        async function editEntry(index) {
+            try {
+                // First get all entries
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec?action=getEntries');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const entries = await response.json();
+                
+                if (!entries || !entries[index]) {
+                    throw new Error('Entry not found');
+                }
+
+                const entry = entries[index];
+                
+                // Fill the form with entry data
+                document.getElementById('studentName').value = entry.studentName || '';
+                // Clear existing items
+                document.getElementById('items-container').innerHTML = '';
+                itemCounter = 0;
+                addItem();
+                
+                const item = document.querySelector('.item-container');
+                const description = document.getElementById(`description-1`);
+                const color = document.getElementById(`color-1`);
+                const size = document.getElementById(`size-1`);
+                const price = document.getElementById(`price-1`);
+
+                description.value = entry.description || '';
+                color.value = entry.color || '';
+                size.value = entry.size || '';
+                price.value = entry.price || '';
+                
+                // Trigger change events to update the display
+                description.dispatchEvent(new Event('change'));
+                color.dispatchEvent(new Event('change'));
+                size.dispatchEvent(new Event('change'));
+                price.dispatchEvent(new Event('change'));
+                
+                const logoInput = document.querySelector(`input[name="logo-1"][value="${entry.logo}"]`);
+                if (logoInput) {
+                    logoInput.checked = true;
+                    logoInput.dispatchEvent(new Event('change'));
+                }
+                
+                currentEditingId = index;
+                document.querySelector('button[type="submit"]').textContent = 'Mettre à jour la commande';
+                
+                // Update total after filling in the price
+                updateTotal();
+                
+                // Scroll to form
+                document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error loading entry:', error);
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.backgroundColor = '#ff4444';
+                notification.textContent = `Erreur lors du chargement de l'entrée: ${error.message}`;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+        }
+
+        async function deleteEntry(index) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette entrée?')) {
+                try {
+                    await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'delete',
+                            index: index
+                        }),
+                        mode: 'no-cors',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    // Reload entries to ensure indexes stay synchronized
+                    await loadEntries();
+                    const notification = document.createElement('div');
+                    notification.className = 'notification';
+                    notification.textContent = 'Entrée supprimée avec succès';
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                } catch (error) {
+                    console.error('Error deleting entry:', error);
+                    const notification = document.createElement('div');
+                    notification.className = 'notification';
+                    notification.style.backgroundColor = '#ff4444';
+                    notification.textContent = 'Erreur lors de la suppression';
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+                }
+            }
+        }
+
+        // Search functionality
+        document.getElementById('adminSearchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const entries = document.querySelectorAll('.entry-item');
+            
+            entries.forEach(entry => {
+                const studentName = entry.querySelector('h3').textContent.toLowerCase();
+                entry.style.display = studentName.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+
+        // Modify form submission to handle updates
+        const originalSubmitHandler = document.getElementById('orderForm').onsubmit;
+        document.getElementById('orderForm').onsubmit = async function(e) {
             e.preventDefault();
             
             const items = document.querySelectorAll('.item-container');
-            const studentName = document.getElementById('studentName').value;
-            const originalPrice = document.getElementById('originalPrice').textContent;
+            const studentName = document.getElementById('studentName').value.trim();
             const totalPrice = document.getElementById('totalPrice').textContent;
             
             // Validate all required fields
@@ -344,7 +1175,12 @@
             });
 
             if (!isValid) {
-                alert('Veuillez remplir tous les champs obligatoires:\n' + missingFields.join('\n'));
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.backgroundColor = '#ff4444';
+                notification.textContent = 'Veuillez remplir tous les champs obligatoires: ' + missingFields.join(', ');
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
                 return;
             }
 
@@ -363,11 +1199,12 @@
                         size: document.getElementById(`size-${itemId}`).value,
                         price: document.getElementById(`price-${itemId}`).value,
                         logo: document.querySelector(`input[name="logo-${itemId}"]:checked`).value,
-                        originalPrice: originalPrice,
-                        totalPrice: totalPrice
+                        totalPrice: totalPrice,
+                        action: currentEditingId !== null ? 'update' : 'add',
+                        index: currentEditingId
                     };
 
-                    await fetch('https://script.google.com/macros/s/AKfycbwriJmKk93NW5To1Q3_A5c9XYtkFFjGaKN261Qrz0xVHIif6jHDDU5tBQpFM8u5kPtK/exec', {
+                    await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec', {
                         method: 'POST',
                         body: JSON.stringify(itemData),
                         mode: 'no-cors',
@@ -377,28 +1214,406 @@
                     });
                 }
 
-                alert('Commande soumise avec succès! Les détails ont été enregistrés.');
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = currentEditingId !== null ? 'Commande mise à jour avec succès!' : 'Commande soumise avec succès! Les détails ont été enregistrés.';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+                
+                // Reset form
                 this.reset();
-                // Reset to one item
                 const container = document.getElementById('items-container');
                 container.innerHTML = '';
                 itemCounter = 0;
                 addItem();
-                // Set first item background to white
                 document.querySelector('.item-container').style.backgroundColor = 'white';
                 updateTotal();
+                
+                // Reset editing state
+                currentEditingId = null;
+                document.querySelector('button[type="submit"]').textContent = 'Soumettre la commande';
+                
+                // Refresh admin panel if visible
+                if (document.getElementById('adminPanel').style.display === 'block') {
+                    loadEntries();
+                }
+                
             } catch (error) {
                 console.error('Error:', error);
                 alert('Erreur lors de la soumission. Veuillez réessayer.');
             } finally {
                 const submitButton = document.querySelector('button[type="submit"]');
                 submitButton.disabled = false;
-                submitButton.textContent = 'Soumettre la commande';
+                submitButton.textContent = currentEditingId !== null ? 'Mettre à jour la commande' : 'Soumettre la commande';
             }
-        });
+        };
 
-        // Initialize the form
-        updateRemoveButtons();
+        // GD Report functionality
+        const GD_PASSWORD = 'admin123';
+
+        function toggleGDLogin() {
+            const loginForm = document.getElementById('gdLoginForm');
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function loginGD() {
+            try {
+                const passwordInput = document.getElementById('gdPassword');
+                const password = passwordInput.value.trim();
+                
+                if (!password) {
+                    throw new Error('Veuillez entrer un mot de passe');
+                }
+
+                if (password === GD_PASSWORD) {
+                    document.getElementById('gdPanel').style.display = 'block';
+                    document.getElementById('gdLoginForm').style.display = 'none';
+                    document.getElementById('gdLogoutButton').style.display = 'inline-block';
+                    passwordInput.value = '';
+                    await loadOrderReport();
+                } else {
+                    throw new Error('Mot de passe incorrect');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.backgroundColor = '#ff4444';
+                notification.textContent = error.message;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+        }
+
+        function logoutGD() {
+            document.getElementById('gdPanel').style.display = 'none';
+            document.getElementById('gdLogoutButton').style.display = 'none';
+        }
+
+        async function loadOrderReport() {
+            const reportDiv = document.getElementById('orderReport');
+            reportDiv.innerHTML = '<p>Chargement du rapport...</p>';
+            
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec?action=getEntries');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const entries = await response.json();
+                
+                if (!Array.isArray(entries)) {
+                    throw new Error('Invalid data format received from server');
+                }
+                
+                if (entries.length === 0) {
+                    reportDiv.innerHTML = '<p>Aucune commande trouvée</p>';
+                    return;
+                }
+
+                // Process and display the report
+                const report = generateOrderReport(entries);
+                reportDiv.innerHTML = report;
+            } catch (error) {
+                console.error('Error loading report:', error);
+                reportDiv.innerHTML = `<p style="color: red;">Erreur lors du chargement du rapport: ${error.message}</p>`;
+            }
+        }
+
+        function generateOrderReport(entries) {
+            // Initialize detailed statistics object
+            const manufacturingStats = {};
+            const ordersByStudent = {};
+            let totalOrders = 0;
+            let totalRevenue = 0;
+
+            // Process entries
+            entries.forEach(entry => {
+                totalOrders++;
+                const price = parseFloat(entry.price) || 0;
+                totalRevenue += price;
+
+                // Initialize clothing type if not exists
+                if (!manufacturingStats[entry.description]) {
+                    manufacturingStats[entry.description] = {
+                        total: 0,
+                        bySize: {},
+                        byColor: {},
+                        byLogo: {},
+                        detailedBreakdown: {} // For size+color combinations
+                    };
+                }
+
+                const typeStats = manufacturingStats[entry.description];
+                typeStats.total++;
+
+                // Count by size
+                typeStats.bySize[entry.size] = (typeStats.bySize[entry.size] || 0) + 1;
+
+                // Count by color
+                typeStats.byColor[entry.color] = (typeStats.byColor[entry.color] || 0) + 1;
+
+                // Count by logo
+                typeStats.byLogo[entry.logo] = (typeStats.byLogo[entry.logo] || 0) + 1;
+
+                // Count detailed size+color+logo combinations
+                const combination = `${entry.size}-${entry.color}-${entry.logo}`;
+                typeStats.detailedBreakdown[combination] = (typeStats.detailedBreakdown[combination] || 0) + 1;
+
+                // Group by student
+                if (!ordersByStudent[entry.studentName]) {
+                    ordersByStudent[entry.studentName] = [];
+                }
+                ordersByStudent[entry.studentName].push(entry);
+            });
+
+            // Generate HTML report
+            let html = `
+                <div class="report-summary" style="margin-bottom: 20px; padding: 15px; background-color: #f0f8ff; border-radius: 4px;">
+                    <h3>Résumé Global</h3>
+                    <p><strong>Nombre total de commandes:</strong> ${totalOrders}</p>
+                    <p><strong>Revenu total:</strong> ${totalRevenue.toFixed(2)}$</p>
+                    <p><strong>Nombre d'étudiants:</strong> ${Object.keys(ordersByStudent).length}</p>
+                </div>
+
+                <div class="manufacturing-report" style="margin-bottom: 30px;">
+                    <h3 style="color: #2196F3; margin-bottom: 20px;">Rapport de Production par Type de Vêtement</h3>
+                    ${Object.entries(manufacturingStats).map(([type, stats]) => `
+                        <div class="clothing-type" style="background-color: #fff; padding: 20px; margin-bottom: 20px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                            <h4 style="color: #333; margin-bottom: 15px;">${type} (Total: ${stats.total})</h4>
+                            
+                            <div class="order-tables">
+                                <div class="order-table" style="margin-bottom: 30px;">
+                                    <h5 style="color: #666; margin-bottom: 15px;">Commande de Vêtements:</h5>
+                                    <div style="overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; background: white;">
+                                            <thead>
+                                                <tr style="background: #f0f0f0;">
+                                                    <th style="padding: 10px; border: 1px solid #ddd;">Taille</th>
+                                                    ${[...new Set(Object.entries(stats.detailedBreakdown)
+                                                        .map(([combo]) => combo.split('-')[1]))].sort()
+                                                        .map(color => `<th style="padding: 10px; border: 1px solid #ddd;">${color}</th>`)
+                                                        .join('')}
+                                                    <th style="padding: 10px; border: 1px solid #ddd;">Total par Taille</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${['XS', 'S', 'M', 'L', 'XL', 'XXL'].map(size => {
+                                                    const colors = [...new Set(Object.entries(stats.detailedBreakdown)
+                                                        .map(([combo]) => combo.split('-')[1]))].sort();
+                                                    const sizeTotal = colors.reduce((sum, color) => {
+                                                        return sum + Object.entries(stats.detailedBreakdown)
+                                                            .filter(([combo]) => {
+                                                                const [s, c] = combo.split('-');
+                                                                return s === size && c === color;
+                                                            })
+                                                            .reduce((sum, [, count]) => sum + count, 0);
+                                                    }, 0);
+                                                    return `
+                                                        <tr>
+                                                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>${size}</strong></td>
+                                                            ${colors.map(color => {
+                                                                const count = Object.entries(stats.detailedBreakdown)
+                                                                    .filter(([combo]) => {
+                                                                        const [s, c] = combo.split('-');
+                                                                        return s === size && c === color;
+                                                                    })
+                                                                    .reduce((sum, [, count]) => sum + count, 0);
+                                                                return `<td style="padding: 10px; border: 1px solid #ddd;">${count || '-'}</td>`;
+                                                            }).join('')}
+                                                            <td style="padding: 10px; border: 1px solid #ddd;"><strong>${sizeTotal || '-'}</strong></td>
+                                                        </tr>
+                                                    `;
+                                                }).join('')}
+                                                <tr style="background: #f0f0f0;">
+                                                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>Total par Couleur</strong></td>
+                                                    ${[...new Set(Object.entries(stats.detailedBreakdown)
+                                                        .map(([combo]) => combo.split('-')[1]))].sort()
+                                                        .map(color => {
+                                                            const colorTotal = Object.entries(stats.detailedBreakdown)
+                                                                .filter(([combo]) => combo.split('-')[1] === color)
+                                                                .reduce((sum, [, count]) => sum + count, 0);
+                                                            return `<td style="padding: 10px; border: 1px solid #ddd;"><strong>${colorTotal || '-'}</strong></td>`;
+                                                        }).join('')}
+                                                    <td style="padding: 10px; border: 1px solid #ddd;"><strong>${stats.total}</strong></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="logo-table" style="margin-bottom: 30px;">
+                                    <h5 style="color: #666; margin-bottom: 15px;">Impression des Logos:</h5>
+                                    <div style="overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; background: white;">
+                                            <thead>
+                                                <tr style="background: #f0f0f0;">
+                                                    <th style="padding: 10px; border: 1px solid #ddd;">Taille</th>
+                                                    <th style="padding: 10px; border: 1px solid #ddd;">Couleur</th>
+                                                    <th style="padding: 10px; border: 1px solid #ddd;">Logo</th>
+                                                    <th style="padding: 10px; border: 1px solid #ddd;">Quantité</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${Object.entries(stats.detailedBreakdown)
+                                                    .sort(([a], [b]) => a.localeCompare(b))
+                                                    .map(([combo, count]) => {
+                                                        const [size, color, logo] = combo.split('-');
+                                                        return `
+                                                            <tr>
+                                                                <td style="padding: 10px; border: 1px solid #ddd;">${size}</td>
+                                                                <td style="padding: 10px; border: 1px solid #ddd;">${color}</td>
+                                                                <td style="padding: 10px; border: 1px solid #ddd;">${logo}</td>
+                                                                <td style="padding: 10px; border: 1px solid #ddd;">${count}</td>
+                                                            </tr>
+                                                        `;
+                                                    }).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+            `;
+
+            // Add spreadsheet-style summary table with rebate
+            html += `
+                <h3 style="margin-top: 30px; color: #2196F3;">Résumé des Commandes avec Rabais</h3>
+                <div class="order-summary-table" style="overflow-x: auto; margin-top: 20px; margin-bottom: 30px;">
+                    <table style="width: 100%; border-collapse: collapse; background: white;">
+                        <thead>
+                            <tr style="background: #f0f0f0;">
+                                <th style="padding: 10px; border: 1px solid #ddd;">Étudiant</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Articles</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Prix par Article</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Total</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Rabais (5$)</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Total Final</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.entries(ordersByStudent).map(([studentName, orders]) => {
+                                const orderDetails = orders.map(order => ({
+                                    description: `${order.description} (${order.color}, ${order.size}, Logo: ${order.logo})`,
+                                    price: parseFloat(order.price) || 0
+                                }));
+                                const subtotal = orderDetails.reduce((sum, order) => sum + order.price, 0);
+                                const rebate = 5; // $5 rebate per student
+                                const finalTotal = subtotal - rebate;
+
+                                return `
+                                    <tr>
+                                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>${studentName}</strong></td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">
+                                            ${orderDetails.map(order => `<div>${order.description}</div>`).join('')}
+                                        </td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;">
+                                            ${orderDetails.map(order => `<div>${order.price.toFixed(2)}$</div>`).join('')}
+                                        </td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>${subtotal.toFixed(2)}$</strong></td>
+                                        <td style="padding: 10px; border: 1px solid #ddd; color: #4CAF50;"><strong>-${rebate.toFixed(2)}$</strong></td>
+                                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>${finalTotal.toFixed(2)}$</strong></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f0f0f0;">
+                                <td colspan="3" style="padding: 10px; border: 1px solid #ddd; text-align: right;"><strong>Grand Total:</strong></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><strong>${Object.values(ordersByStudent).reduce((sum, orders) => sum + orders.reduce((orderSum, order) => orderSum + (parseFloat(order.price) || 0), 0), 0).toFixed(2)}$</strong></td>
+                                <td style="padding: 10px; border: 1px solid #ddd; color: #4CAF50;"><strong>-${(Object.keys(ordersByStudent).length * 5).toFixed(2)}$</strong></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><strong>${(Object.values(ordersByStudent).reduce((sum, orders) => sum + orders.reduce((orderSum, order) => orderSum + (parseFloat(order.price) || 0), 0), 0) - (Object.keys(ordersByStudent).length * 5)).toFixed(2)}$</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+
+            return html;
+        }
+
+        // Email Dialog Functions
+        let currentReportType = null;
+
+        function showEmailDialog(reportType) {
+            currentReportType = reportType;
+            document.getElementById('emailDialog').style.display = 'block';
+            document.getElementById('emailInput').value = '';
+            document.getElementById('xlsxFormat').checked = true;
+            document.getElementById('pdfFormat').checked = true;
+        }
+
+        function closeEmailDialog() {
+            document.getElementById('emailDialog').style.display = 'none';
+            currentReportType = null;
+        }
+
+        async function sendReport() {
+            const email = document.getElementById('emailInput').value.trim();
+            const xlsx = document.getElementById('xlsxFormat').checked;
+            const pdf = document.getElementById('pdfFormat').checked;
+
+            if (!email) {
+                alert('Veuillez entrer une adresse email valide');
+                return;
+            }
+
+            if (!xlsx && !pdf) {
+                alert('Veuillez sélectionner au moins un format');
+                return;
+            }
+
+            try {
+                // Get all entries for the report
+                const response = await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec?action=getEntries');
+                if (!response.ok) throw new Error('Failed to fetch entries');
+                const entries = await response.json();
+
+                // Prepare the email data
+                const emailData = {
+                    action: 'sendReport',
+                    email: email,
+                    formats: {
+                        xlsx: xlsx,
+                        pdf: pdf
+                    },
+                    reportType: currentReportType,
+                    entries: entries
+                };
+
+                // Send the report request
+                await fetch('https://script.google.com/macros/s/AKfycbwrwAGzumrXT58blVxGSilXyC74r_uzAirdGKDoWaQOXOneMeO6r3I7uje1C8q8kElN/exec', {
+                    method: 'POST',
+                    body: JSON.stringify(emailData),
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                // Show success message
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = 'Rapport envoyé avec succès!';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+
+                // Close the dialog
+                closeEmailDialog();
+            } catch (error) {
+                console.error('Error sending report:', error);
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.backgroundColor = '#ff4444';
+                notification.textContent = 'Erreur lors de l\'envoi du rapport';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+        }
     </script>
 </body>
 </html>
